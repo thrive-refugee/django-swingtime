@@ -65,16 +65,13 @@ expected_table_5 = '''\
 | 16:30 | alpha    | bravo    | foxtrot  | charlie  | delta    |
 '''
 
-#===============================================================================
 class TableTest(TestCase):
 
     fixtures = ['swingtime_test.json']
 
-    #---------------------------------------------------------------------------
     def setUp(self):
         self._dt = dt = datetime(2008,12,11)
 
-    #---------------------------------------------------------------------------
     def table_as_string(self, table):
         timefmt = '| {:<5s} '
         cellfmt = '| {:<8s} '
@@ -90,7 +87,6 @@ class TableTest(TestCase):
             
         return ''.join(out)
 
-    #---------------------------------------------------------------------------
     def _do_test(self, start, end, expect):
         start   = time(*start)
         dtstart = datetime.combine(self._dt, start)
@@ -100,33 +96,26 @@ class TableTest(TestCase):
         out     = 'Expecting:\n{0}\nActual:\n{1}'.format(expect, actual)
         self.assertEqual(actual, expect, out)
 
-    #---------------------------------------------------------------------------
     def test_slot_table_1(self):
         self._do_test((15,0), (18,0), expected_table_1)
 
-    #---------------------------------------------------------------------------
     def test_slot_table_2(self):
         self._do_test((15,30), (17,30), expected_table_2)
 
-    #---------------------------------------------------------------------------
     def test_slot_table_3(self):
         self._do_test((16,0), (17,30), expected_table_3)
 
-    #---------------------------------------------------------------------------
     def test_slot_table_4(self):
         self._do_test((18,0), (19,30), expected_table_4)
 
-    #---------------------------------------------------------------------------
     def test_slot_table_5(self):
         self._do_test((16,30), (16,30), expected_table_5)
 
 
-#===============================================================================
 class NewEventFormTest(TestCase):
 
     fixtures = ['swingtime_test']
     
-    #---------------------------------------------------------------------------
     def test_new_event_simple(self):
         data = dict(
             title='QWERTY',
@@ -158,7 +147,6 @@ class NewEventFormTest(TestCase):
             'Bad start_time: {0}'.format(pformat(occ_form.cleaned_data))
         )
 
-    #---------------------------------------------------------------------------
     def test_freq(self):
         et = EventType.objects.get(pk=1)
         e = Event.objects.create(title='FIRE BAD!', description='***', event_type=et)
@@ -182,10 +170,8 @@ class NewEventFormTest(TestCase):
         actual = [o.start_time.date() for o in e.occurrence_set.all()]
         self.assertEqual(expected, actual, '\nGOT:\n{}\n^\nEXP:\n{}'.format(pformat(actual), pformat(expected)))
 
-#===============================================================================
 class CreationTest(TestCase):
     
-    #---------------------------------------------------------------------------
     def test_1(self):
         et = EventType.objects.create(abbr='foo', label='Foo')
         self.assertTrue(et.abbr == 'foo')
@@ -202,7 +188,6 @@ class CreationTest(TestCase):
             o = occs[i]
             self.assertEqual(o.start_time.year, 2008 + i)
         
-    #---------------------------------------------------------------------------
     def test_2(self):
         et = EventType.objects.create(abbr='bar', label='Bar')
         self.assertEqual(str(et), 'Bar')
@@ -212,7 +197,6 @@ class CreationTest(TestCase):
         self.assertEqual(e.occurrence_set.count(), 1)
         self.assertEqual(e.daily_occurrences().count(), 1)
     
-    #---------------------------------------------------------------------------
     def test_3(self):
         e = create_event(
             'Something completely different',
@@ -231,7 +215,6 @@ class CreationTest(TestCase):
             o = occs[i]
             self.assertEqual(day, o.start_time.day)
     
-    #---------------------------------------------------------------------------
     def test_4(self):
         e = create_event('This parrot has ceased to be!', ('blue', 'Blue'), count=3)
         occs = list(e.upcoming_occurrences())
@@ -252,15 +235,12 @@ class CreationTest(TestCase):
         occs = list(e.occurrence_set.all())
         self.assertEqual(len(occs), 4749)
 
-#===============================================================================
 class MiscTest(TestCase):
     
-    #---------------------------------------------------------------------------
     def test_version(self):
         V = swingtime.VERSION
         self.assertEqual(swingtime.get_version(), '.'.join([str(i) for i in V]))
     
-    #---------------------------------------------------------------------------
     def test_month_boundaries(self):
         dt = datetime(2012,2,15)
         start, end = utils.month_boundaries(dt)

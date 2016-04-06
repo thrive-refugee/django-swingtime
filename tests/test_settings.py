@@ -1,8 +1,14 @@
+import os, sys 
 try:
     # dateutil is an absolute requirement
     import dateutil
 except ImportError:
     raise ImportError('django-swingtime requires the "python-dateutil" package')
+try:
+	import swingtime
+except ImportError:
+	print('swingtime not on system path; adding parent directory')
+	sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 DEBUG = TEMPLATE_DEBUG = True
 DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': 'swingtime_test.db'}}

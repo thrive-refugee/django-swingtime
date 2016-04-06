@@ -15,7 +15,6 @@ from swingtime.conf import settings as swingtime_settings
 from swingtime.models import EventType
 
 
-#-------------------------------------------------------------------------------
 def html_mark_safe(func):
     '''
     Decorator for functions return strings that should be treated as template
@@ -27,7 +26,6 @@ def html_mark_safe(func):
     return decorator
 
 
-#-------------------------------------------------------------------------------
 def time_delta_total_seconds(time_delta):
     '''
     Calculate the total number of seconds represented by a 
@@ -37,7 +35,6 @@ def time_delta_total_seconds(time_delta):
     return time_delta.days * 3600 + time_delta.seconds
 
 
-#-------------------------------------------------------------------------------
 def month_boundaries(dt=None):
     '''
     Return a 2-tuple containing the datetime instances for the first and last 
@@ -50,12 +47,10 @@ def month_boundaries(dt=None):
     return (start, start + timedelta(ndays - 1))
 
 
-#-------------------------------------------------------------------------------
 def default_css_class_cycler():
     return itertools.cycle(('evt-even', 'evt-odd'))
 
 
-#-------------------------------------------------------------------------------
 def css_class_cycler():
     '''
     Return a dictionary keyed by ``EventType`` abbreviations, whose values are an
@@ -69,7 +64,6 @@ def css_class_cycler():
     ))
 
 
-#===============================================================================
 @python_2_unicode_compatible
 class BaseOccurrenceProxy(object):
     '''
@@ -77,28 +71,23 @@ class BaseOccurrenceProxy(object):
     ``Occurrence`` instance.
     
     '''
-    #---------------------------------------------------------------------------
     def __init__(self, occurrence, col):
         self.column = col
         self._occurrence = occurrence
         self.event_class = ''
 
-    #---------------------------------------------------------------------------
     def __getattr__(self, name):
         return getattr(self._occurrence, name)
         
-    #---------------------------------------------------------------------------
     def __str__(self):
         return self.title
 
 
-#===============================================================================
 @python_2_unicode_compatible
 class DefaultOccurrenceProxy(BaseOccurrenceProxy):
 
     CONTINUATION_STRING = '^^'
     
-    #---------------------------------------------------------------------------
     def __init__(self, *args, **kws):
         super(DefaultOccurrenceProxy, self).__init__(*args, **kws)
         link = '<a href="%s">%s</a>' % (
@@ -111,13 +100,11 @@ class DefaultOccurrenceProxy(BaseOccurrenceProxy):
             itertools.repeat(self.CONTINUATION_STRING)
         )
 
-    #---------------------------------------------------------------------------
     @html_mark_safe
     def __str__(self):
         return next(self._str)
 
 
-#-------------------------------------------------------------------------------
 def create_timeslot_table(
     dt=None,
     items=None,

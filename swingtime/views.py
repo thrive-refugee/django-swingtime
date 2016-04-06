@@ -18,7 +18,6 @@ if swingtime_settings.CALENDAR_FIRST_WEEKDAY is not None:
     calendar.setfirstweekday(swingtime_settings.CALENDAR_FIRST_WEEKDAY)
 
 
-#-------------------------------------------------------------------------------
 def event_listing(
     request,
     template='swingtime/event_list.html',
@@ -38,19 +37,20 @@ def event_listing(
     ... plus all values passed in via **extra_context
     '''
     if events is None:
-        events = Event.objects.all()
+        event_cls = extra_context.pop('event_cls', Event)
+        events = event_cls.objects.all()
     
     extra_context['events'] = events
     return render(request, template, extra_context)
 
 
-#-------------------------------------------------------------------------------
 def event_view(
     request,
     pk,
     template='swingtime/event_detail.html',
     event_form_class=forms.EventForm,
-    recurrence_form_class=forms.MultipleOccurrenceForm
+    recurrence_form_class=forms.MultipleOccurrenceForm,
+    event_cls=Event
 ):
     '''
     View an ``Event`` instance and optionally update either the event or its
@@ -67,7 +67,7 @@ def event_view(
     ``recurrence_form``
         a form object for adding occurrences
     '''
-    event = get_object_or_404(Event, pk=pk)
+    event = get_object_or_404(event_cls, pk=pk)
     event_form = recurrence_form = None
     if request.method == 'POST':
         if '_update' in request.POST:
@@ -91,13 +91,13 @@ def event_view(
     return render(request, template, data)
 
 
-#-------------------------------------------------------------------------------
 def occurrence_view(
     request,
     event_pk,
     pk,
     template='swingtime/occurrence_detail.html',
-    form_class=forms.SingleOccurrenceForm
+    form_class=forms.SingleOccurrenceForm,
+    occurrence_cls=Occurrence
 ):
     '''
     View a specific occurrence and optionally handle any updates.
@@ -110,7 +110,7 @@ def occurrence_view(
     ``form``
         a form object for updating the occurrence
     '''
-    occurrence = get_object_or_404(Occurrence, pk=pk, event__pk=event_pk)
+    occurrence = get_object_or_404(occurrence_cls, pk=pk, event__pk=event_pk)
     if request.method == 'POST':
         form = form_class(request.POST, instance=occurrence)
         if form.is_valid():
@@ -122,7 +122,6 @@ def occurrence_view(
     return render(request, template, {'occurrence': occurrence, 'form': form})
 
 
-#-------------------------------------------------------------------------------
 def add_event(
     request,
     template='swingtime/add_event.html',
@@ -173,7 +172,6 @@ def add_event(
     )
 
 
-#-------------------------------------------------------------------------------
 def _datetime_view(
     request,
     template,
@@ -212,7 +210,6 @@ def _datetime_view(
     })
 
 
-#-------------------------------------------------------------------------------
 def day_view(request, year, month, day, template='swingtime/daily_view.html', **params):
     '''
     See documentation for function``_datetime_view``.
@@ -222,7 +219,6 @@ def day_view(request, year, month, day, template='swingtime/daily_view.html', **
     return _datetime_view(request, template, dt, **params)
 
 
-#-------------------------------------------------------------------------------
 def today_view(request, template='swingtime/daily_view.html', **params):
     '''
     See documentation for function``_datetime_view``.
@@ -231,7 +227,6 @@ def today_view(request, template='swingtime/daily_view.html', **params):
     return _datetime_view(request, template, datetime.now(), **params)
 
 
-#-------------------------------------------------------------------------------
 def year_view(request, year, template='swingtime/yearly_view.html', queryset=None):
     '''
 
@@ -272,11 +267,9 @@ def year_view(request, year, template='swingtime/yearly_view.html', queryset=Non
         'by_month': [(dt, list(o)) for dt,o in itertools.groupby(occurrences, group_key)],
         'next_year': year + 1,
         'last_year': year - 1
-        
     })
 
 
-#-------------------------------------------------------------------------------
 def month_view(
     request,
     year,
