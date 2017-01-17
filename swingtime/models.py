@@ -189,7 +189,7 @@ class OccurrenceBase(models.Model):
         ordering = ('start_time', 'end_time')
 
     def __str__(self):
-        return '{}: {}'.format(self.title, self.start_time.isoformat())
+        return u'{}: {}'.format(self.title, self.start_time.isoformat())
 
     @models.permalink
     def get_absolute_url(self):
