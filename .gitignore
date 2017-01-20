@@ -1,8 +1,8 @@
 *.log
 *.pot
 *.pyc
-karate.db
-demo/static
+karate.sqlite
+demos/basic/static
 docs/build
 MANIFEST
 dist
@@ -11,4 +11,4 @@ django_swingtime.egg-info/
 /dev
 tests/.coverage
 tests/htmlcov
-*.sqlite
+__pycache__/

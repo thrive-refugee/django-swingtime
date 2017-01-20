@@ -3,6 +3,14 @@
 Changes in Swingtime
 ====================
 
+Release 0.8 (January 18, 2017)
+------------------------------
+
+* Created abstract base models 
+* Added demo for using base models
+* Supports Django>=1.8,<1.11; Python>=2.7,>=3.4,<3.6
+
+
 Release 0.7.1 (January 29, 2016)
 --------------------------------
 

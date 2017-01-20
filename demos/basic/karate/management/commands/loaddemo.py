@@ -1,31 +1,20 @@
 '''
-#---------------------------------------------------------------------------------+
-| Welcome to the swingtime demo project. This project's theme is a Karate dojo    |
-| and the database will be pre-populated with some data relative to today's date. |
-#---------------------------------------------------------------------------------+
+------------------------------------------------------------------------------
+ Welcome to the swingtime demo project. This project's theme is a Karate dojo 
+ and the database will be pre-populated with data relative to today's date.   
+------------------------------------------------------------------------------
 '''
 from __future__ import print_function, unicode_literals
 import os
-import django
+from datetime import datetime, date, time, timedelta
+
 from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import User
-from datetime import datetime, date, time, timedelta
+from django.contrib.auth import get_user_model
 from django.conf import settings
-from django.db.models import signals
-from django.utils.termcolors import make_style
-from django.core.management.color import color_style
 from dateutil import rrule
 from swingtime import models as swingtime
 
-class Term:
-    info  = staticmethod(make_style(opts=('bold',), fg='green'))
-    warn  = staticmethod(make_style(opts=('bold',), fg='yellow', bg='black'))
-    error = staticmethod(make_style(opts=('bold',), fg='red', bg='black'))
-
-IS_1_7 = django.VERSION[:2] >= (1,7)
-
-#-------------------------------------------------------------------------------
 def create_sample_data():
     
     # Create the studio's event types
@@ -41,9 +30,9 @@ def create_sample_data():
             ('spc',  'Special Event'),
         )
     ))
-    print(__doc__)
-    print('Created event types: %s' % (
-        ', '.join(['%s' % et for et in swingtime.EventType.objects.all()]),
+    print('{}\nCreated event types: {}'.format(
+        __doc__,
+        ', '.join([str(et) for et in swingtime.EventType.objects.all()]),
     ))
     
     now = datetime.now()
@@ -57,7 +46,7 @@ def create_sample_data():
         end_time=datetime.combine(now.date(), time(18)),
         note='Free tea, sushi, and sake'
     )
-    print('Created event "%s" with %d occurrences' % (evt, evt.occurrence_set.count()))
+    print('Created event "{}" with {} occurrences'.format(evt, evt.occurrence_set.count()))
     
     # create an event with multiple occurrences by fixed count
     evt = swingtime.create_event(
@@ -68,7 +57,7 @@ def create_sample_data():
         count=30,
         byweekday=(rrule.MO, rrule.WE, rrule.FR)
     )
-    print('Created event "%s" with %d occurrences' % (evt, evt.occurrence_set.count()))
+    print('Created event "{}" with {} occurrences'.format(evt, evt.occurrence_set.count()))
 
     # create an event with multiple occurrences by ending date (until)
     evt = swingtime.create_event(
@@ -79,7 +68,7 @@ def create_sample_data():
         until=now + timedelta(days=+70),
         byweekday=(rrule.MO, rrule.WE, rrule.FR)
     )
-    print('Created event "%s" with %d occurrences' % (evt, evt.occurrence_set.count()))
+    print('Created event "{}" with {} occurrences'.format(evt, evt.occurrence_set.count()))
 
     # create an event with multiple occurrences by fixed count on monthly basis
     evt = swingtime.create_event(
@@ -92,7 +81,7 @@ def create_sample_data():
         freq=rrule.MONTHLY,
         byweekday=(rrule.TH(+1), rrule.TH(+3))
     )
-    print('Created event "%s" with %d occurrences' % (evt, evt.occurrence_set.count()))
+    print('Created event "{}" with {} occurrences'.format(evt, evt.occurrence_set.count()))
 
     # create an event with multiple occurrences and alternate intervale
     evt = swingtime.create_event(
@@ -105,27 +94,23 @@ def create_sample_data():
         count=6,
         byweekday=(rrule.SU)
     )
-    print('Created event "%s" with %d occurrences\n' % (evt, evt.occurrence_set.count()))
+    print('Created event "{}" with {} occurrences\n'.format(evt, evt.occurrence_set.count()))
 
 
-#===============================================================================
 class Command(BaseCommand):
+    
     help = 'Run the swingtime demo. If an existing demo database exists, it will recreated.'
     
-    #---------------------------------------------------------------------------
     def handle(self, **options):
         dbpath = settings.DATABASES['default']['NAME']
         if os.path.exists(dbpath):
-            self.stdout.write(Term.warn('Removing old database %s' % dbpath))
+            self.stdout.write('Removing old database {}'.format(dbpath))
             os.remove(dbpath)
-        self.stdout.write(Term.info('Creating database %s' % dbpath))
 
-        if IS_1_7:
-            call_command('migrate', noinput=True, load_initial_data=False, interactive=False)
-        else:
-            call_command('syncdb', noinput=True, load_initial_data=False, interactive=False)
+        self.stdout.write('Creating database {}'.format(dbpath))
+        call_command('migrate', noinput=True, load_initial_data=False, interactive=False)
             
-        User.objects.create_superuser('admin', 'admin@example.com', 'password')
+        get_user_model().objects.create_superuser('admin', 'admin@example.com', 'password')
         print('Done.\n\nCreating sample data...')
         create_sample_data()
         print('Done\n')

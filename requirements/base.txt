@@ -1,0 +1,4 @@
+pytz
+python-dateutil
+Django<1.11
+-e ..

@@ -65,11 +65,118 @@ expected_table_5 = '''\
 | 16:30 | alpha    | bravo    | foxtrot  | charlie  | delta    |
 '''
 
-class TableTest(TestCase):
-
-    fixtures = ['swingtime_test.json']
+class _BaseTest(TestCase):
 
     def setUp(self):
+
+        EventType.objects.create(
+            pk=2,
+            abbr="work", 
+            label="Work"
+        )
+ 
+        EventType.objects.create(
+            pk=1, 
+            abbr="play", 
+            label="Play"
+        )
+ 
+        Event.objects.create( 
+            id=1, 
+            event_type_id=1, 
+            title="bravo",
+            description=""
+        )
+
+        Event.objects.create( 
+            id=2, 
+            event_type_id=2, 
+            title="echo",
+            description=""
+        )
+
+        Event.objects.create( 
+            id=3, 
+            event_type_id=1, 
+            title="charlie",
+            description=""
+        )
+
+        Event.objects.create( 
+            id=4, 
+            event_type_id=2, 
+            title="foxtrot",
+            description=""
+        )
+
+        Event.objects.create( 
+            id=5, 
+            event_type_id=1, 
+            title="alpha",
+            description=""
+        )
+
+        Event.objects.create( 
+            id=6, 
+            event_type_id=2, 
+            title="zelda",
+            description=""
+        )
+
+        Event.objects.create( 
+            id=7, 
+            event_type_id=1, 
+            title="delta",
+            description=""
+        )
+
+        Occurrence.objects.create( 
+            start_time="2008-12-11 15:15:00", 
+            event_id=6, 
+            end_time="2008-12-11 15:45:00"
+        )
+
+        Occurrence.objects.create( 
+            start_time="2008-12-11 15:30:00", 
+            event_id=5, 
+            end_time="2008-12-11 17:45:00"
+        )
+
+        Occurrence.objects.create( 
+            start_time="2008-12-11 16:00:00", 
+            event_id=1, 
+            end_time="2008-12-11 16:45:00"
+        )
+
+        Occurrence.objects.create( 
+            start_time="2008-12-11 16:00:00", 
+            event_id=4, 
+            end_time="2008-12-11 16:45:00"
+        )
+
+        Occurrence.objects.create( 
+            start_time="2008-12-11 16:15:00", 
+            event_id=3, 
+            end_time="2008-12-11 17:00:00"
+        )
+
+        Occurrence.objects.create( 
+            start_time="2008-12-11 16:30:00", 
+            event_id=7, 
+            end_time="2008-12-11 17:15:00"
+        )
+
+        Occurrence.objects.create( 
+            start_time="2008-12-11 17:15:00", 
+            event_id=2, 
+            end_time="2008-12-11 18:00:00"
+        )
+
+
+class TableTest(_BaseTest):
+    
+    def setUp(self):
+        super(TableTest, self).setUp()
         self._dt = dt = datetime(2008,12,11)
 
     def table_as_string(self, table):
@@ -112,10 +219,8 @@ class TableTest(TestCase):
         self._do_test((16,30), (16,30), expected_table_5)
 
 
-class NewEventFormTest(TestCase):
+class NewEventFormTest(_BaseTest):
 
-    fixtures = ['swingtime_test']
-    
     def test_new_event_simple(self):
         data = dict(
             title='QWERTY',
@@ -202,14 +307,12 @@ class CreationTest(TestCase):
             'Something completely different',
             event_type=('abbr', 'Abbreviation'),
             start_time=datetime(2008,12,1, 12),
-            note='Here it is',
             freq=rrule.WEEKLY,
             byweekday=(rrule.TU, rrule.TH),
             until=datetime(2008,12,31)
         )
         self.assertIsInstance(e.event_type, EventType)
         self.assertEqual(e.event_type.abbr, 'abbr')
-        self.assertEqual(str(e.notes.all()[0]), 'Here it is')
         occs = list(e.occurrence_set.all())
         for i, day in zip(range(len(occs)), [2, 4, 9, 11, 16, 18, 23, 25, 30]):
             o = occs[i]

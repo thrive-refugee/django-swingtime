@@ -31,8 +31,9 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
     ),
     packages=find_packages(),
-    package_data={'swingtime': ['locale/*/*/*.*', 'fixtures/swingtime_test.json']},
+    package_data={'swingtime': ['locale/*/*/*.*']},
     requires=['dateutil', 'django']
 )

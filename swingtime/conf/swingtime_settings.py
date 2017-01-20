@@ -31,3 +31,14 @@ DEFAULT_OCCURRENCE_DURATION = datetime.timedelta(hours=+1)
 
 # If not None, passed to the calendar module's setfirstweekday function.
 CALENDAR_FIRST_WEEKDAY = 6
+
+USE_CONCRETE_MODELS = True
+
+# Default event type model    
+EVENT_TYPE_MODEL = 'swingtime.EventType'
+
+# Default event model    
+EVENT_MODEL = 'swingtime.Event'
+
+# Default Occurrence
+OCCURRENCE_MODEL = 'swingtime.Occurrence'

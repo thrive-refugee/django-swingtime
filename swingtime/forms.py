@@ -374,6 +374,7 @@ class EventForm(forms.ModelForm):
 
     '''
 
+    class Meta:
         model = swingtime.Event
         if FIELDS_REQUIRED:
             fields = "__all__"

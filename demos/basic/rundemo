@@ -1,11 +1,7 @@
 #!/bin/bash
 PYWARN='python -Wd'
-pip install -r ../requirements.txt
-cd ../docs
-make html
-cd -
+pip install -r ../../requirements/base.txt
 $PYWARN manage.py check
 $PYWARN manage.py loaddemo
-#$PYWARN manage.py collectstatic --noinput --link
 $PYWARN manage.py runserver
 
