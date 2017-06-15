@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 from django.db import models
 
-from swingtime import models as swingtime
+from swingtime import base_models as swingtime
 
 class RRuleEventType(swingtime.EventTypeBase):
 	pass
