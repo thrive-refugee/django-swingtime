@@ -53,10 +53,6 @@ def css_class_cycler():
     ))
 
 
-<<<<<<< HEAD
-@python_2_unicode_compatible
-=======
->>>>>>> master
 class BaseOccurrenceProxy(object):
     '''
     A simple wrapper class for handling the presentational aspects of an

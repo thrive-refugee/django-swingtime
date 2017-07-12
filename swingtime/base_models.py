@@ -5,7 +5,7 @@ from django.db import models
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 
-from swingtime.conf import settings as swingtime_settings
+from .conf import swingtime_settings
 
 __all__ = (
     'EventTypeBase',

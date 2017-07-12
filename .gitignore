@@ -7,6 +7,6 @@ MANIFEST
 dist
 .tox/
 django_swingtime.egg-info/
-/dev
+build/
 .cache/
 .coverage

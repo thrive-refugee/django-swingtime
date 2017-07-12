@@ -199,7 +199,6 @@ class TestCreation:
         )
         assert True == isinstance(e.event_type, EventType)
         assert e.event_type.abbr == 'abbr'
-        assert str(e.notes.all()[0]) == 'Here it is'
         occs = list(e.occurrence_set.all())
         for i, day in zip(range(len(occs)), [2, 4, 9, 11, 16, 18, 23, 25, 30]):
             o = occs[i]
