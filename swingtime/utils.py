@@ -11,19 +11,8 @@ from django.utils.safestring import mark_safe
 from django.utils.encoding import python_2_unicode_compatible
 
 from dateutil import rrule
-from swingtime.conf import settings as swingtime_settings
-from swingtime.models import EventType
-
-
-def html_mark_safe(func):
-    '''
-    Decorator for functions return strings that should be treated as template
-    safe.
-    
-    '''
-    def decorator(*args, **kws):
-        return mark_safe(func(*args, **kws))
-    return decorator
+from .conf import swingtime_settings
+from .models import EventType, Occurrence
 
 
 def time_delta_total_seconds(time_delta):
@@ -64,7 +53,10 @@ def css_class_cycler():
     ))
 
 
+<<<<<<< HEAD
 @python_2_unicode_compatible
+=======
+>>>>>>> master
 class BaseOccurrenceProxy(object):
     '''
     A simple wrapper class for handling the presentational aspects of an
@@ -83,7 +75,6 @@ class BaseOccurrenceProxy(object):
         return self.title
 
 
-@python_2_unicode_compatible
 class DefaultOccurrenceProxy(BaseOccurrenceProxy):
 
     CONTINUATION_STRING = '^^'
@@ -100,9 +91,9 @@ class DefaultOccurrenceProxy(BaseOccurrenceProxy):
             itertools.repeat(self.CONTINUATION_STRING)
         )
 
-    @html_mark_safe
     def __str__(self):
-        return next(self._str)
+        return mark_safe(next(self._str))
+
 
 
 def create_timeslot_table(
@@ -139,7 +130,6 @@ def create_timeslot_table(
       handle the custom output via its __unicode__ method.
     
     '''
-    from swingtime.models import Occurrence
     dt = dt or datetime.now()
     start_time = start_time.replace(tzinfo=dt.tzinfo) if not start_time.tzinfo else start_time
     dtstart = datetime.combine(dt.date(), start_time)

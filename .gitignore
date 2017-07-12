@@ -3,12 +3,10 @@
 *.pyc
 karate.sqlite
 demos/basic/static
-docs/build
 MANIFEST
 dist
 .tox/
 django_swingtime.egg-info/
 /dev
-tests/.coverage
-tests/htmlcov
-__pycache__/
+.cache/
+.coverage

@@ -1,7 +1,0 @@
-#!/bin/bash
-PYWARN='python -Wd'
-pip install -r ../../requirements/base.txt
-$PYWARN manage.py check
-$PYWARN manage.py loaddemo
-$PYWARN manage.py runserver
-

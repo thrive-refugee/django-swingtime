@@ -2,17 +2,16 @@ import calendar
 import itertools
 import logging
 from datetime import datetime, timedelta, time
-
+from dateutil import parser
 from django import http
 from django.db import models
 from django.template.context import RequestContext
 from django.shortcuts import get_object_or_404, render
 
-from swingtime.models import Event, Occurrence
-from swingtime import utils, forms
-from swingtime.conf import settings as swingtime_settings
+from .models import Event, Occurrence
+from . import utils, forms
+from .conf import swingtime_settings
 
-from dateutil import parser
 
 if swingtime_settings.CALENDAR_FIRST_WEEKDAY is not None:
     calendar.setfirstweekday(swingtime_settings.CALENDAR_FIRST_WEEKDAY)

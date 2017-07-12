@@ -4,7 +4,6 @@
  and the database will be pre-populated with data relative to today's date.   
 ------------------------------------------------------------------------------
 '''
-from __future__ import print_function, unicode_literals
 import os
 from datetime import datetime, date, time, timedelta
 
@@ -14,6 +13,12 @@ from django.contrib.auth import get_user_model
 from django.conf import settings
 from dateutil import rrule
 from swingtime import models as swingtime
+
+class Term:
+    info  = staticmethod(make_style(opts=('bold',), fg='green'))
+    warn  = staticmethod(make_style(opts=('bold',), fg='yellow', bg='black'))
+    error = staticmethod(make_style(opts=('bold',), fg='red', bg='black'))
+
 
 def create_sample_data():
     
@@ -107,10 +112,8 @@ class Command(BaseCommand):
             self.stdout.write('Removing old database {}'.format(dbpath))
             os.remove(dbpath)
 
-        self.stdout.write('Creating database {}'.format(dbpath))
         call_command('migrate', noinput=True, load_initial_data=False, interactive=False)
-            
-        get_user_model().objects.create_superuser('admin', 'admin@example.com', 'password')
+        User.objects.create_superuser('admin', 'admin@example.com', 'password')
         print('Done.\n\nCreating sample data...')
         create_sample_data()
         print('Done\n')

@@ -1,20 +1,15 @@
 '''
 Convenience forms for adding and updating ``Event`` and ``Occurrence``s.
-
 '''
-from __future__ import print_function, unicode_literals
 from datetime import datetime, date, time, timedelta
-from django import VERSION
 from django import forms
 from django.utils.translation import ugettext_lazy as _
-from django.forms.extras.widgets import SelectDateWidget
+from django.forms.widgets import SelectDateWidget
 
 from dateutil import rrule
-from swingtime.conf import settings as swingtime_settings
-from swingtime import models as swingtime
-from swingtime import utils
-
-FIELDS_REQUIRED = (VERSION[:2] >= (1, 6))
+from .conf import swingtime_settings
+from .models import *
+from . import utils
 
 WEEKDAY_SHORT = (
     (7, _('Sun')),
@@ -165,6 +160,7 @@ class MultipleIntegerField(forms.MultipleChoiceField):
     def __init__(self, choices, size=None, label=None, widget=None):
         if widget is None:
             widget = forms.SelectMultiple(attrs={'size' : size or len(choices)})
+        
         super(MultipleIntegerField, self).__init__(
             required=False,
             choices=choices,
@@ -375,9 +371,8 @@ class EventForm(forms.ModelForm):
     '''
 
     class Meta:
-        model = swingtime.Event
-        if FIELDS_REQUIRED:
-            fields = "__all__"
+        model = Event
+        fields = "__all__"
 
     def __init__(self, *args, **kws):
         super(EventForm, self).__init__(*args, **kws)
@@ -394,8 +389,7 @@ class SingleOccurrenceForm(forms.ModelForm):
     end_time = forms.DateTimeField(widget=SplitDateTimeWidget)
 
     class Meta:
-        model = swingtime.Occurrence
-        if FIELDS_REQUIRED:
-            fields = "__all__"
+        model = Occurrence
+        fields = "__all__"
 
 

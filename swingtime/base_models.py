@@ -2,12 +2,8 @@ from datetime import datetime, date, timedelta
 from dateutil import rrule
 
 from django.db import models
-try:
-    from django.urls import reverse
-except ImportError:
-    from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
-from django.utils.encoding import python_2_unicode_compatible
 
 from swingtime.conf import settings as swingtime_settings
 
@@ -19,7 +15,6 @@ __all__ = (
 )
 
 
-@python_2_unicode_compatible
 class EventTypeBase(models.Model):
     '''
     Simple ``Event`` classifcation.
@@ -36,7 +31,6 @@ class EventTypeBase(models.Model):
         return self.label
 
 
-@python_2_unicode_compatible
 class EventBase(models.Model):
     '''
     Container model for general metadata and associated ``Occurrence`` entries.
@@ -141,7 +135,6 @@ class OccurrenceManager(models.Manager):
         return qs.filter(event=event) if event else qs
 
 
-@python_2_unicode_compatible
 class OccurrenceBase(models.Model):
     '''
     Represents the start end time for a specific occurrence of a master ``Event``
