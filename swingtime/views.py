@@ -7,16 +7,20 @@ from django import http
 from django.db import models
 from django.template.context import RequestContext
 from django.shortcuts import get_object_or_404, render
+from django.conf import settings
+from django.core.urlresolvers import reverse
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 
 from .models import Event, Occurrence
 from . import utils, forms
 from .conf import swingtime_settings
 
-
 if swingtime_settings.CALENDAR_FIRST_WEEKDAY is not None:
     calendar.setfirstweekday(swingtime_settings.CALENDAR_FIRST_WEEKDAY)
 
 
+@login_required()
 def event_listing(
     request,
     template='swingtime/event_list.html',
@@ -42,6 +46,7 @@ def event_listing(
     return render(request, template, extra_context)
 
 
+@login_required()
 def event_view(
     request,
     pk,
@@ -88,6 +93,7 @@ def event_view(
     return render(request, template, data)
 
 
+@login_required()
 def occurrence_view(
     request,
     event_pk,
@@ -118,6 +124,7 @@ def occurrence_view(
     return render(request, template, {'occurrence': occurrence, 'form': form})
 
 
+@login_required()
 def add_event(
     request,
     template='swingtime/add_event.html',
@@ -206,6 +213,7 @@ def _datetime_view(
     })
 
 
+@login_required()
 def day_view(request, year, month, day, template='swingtime/daily_view.html', **params):
     '''
     See documentation for function``_datetime_view``.
@@ -214,7 +222,17 @@ def day_view(request, year, month, day, template='swingtime/daily_view.html', **
     dt = datetime(int(year), int(month), int(day))
     return _datetime_view(request, template, dt, **params)
 
+@login_required()
+def calendar_view(
+    request,
+    template='swingtime/calendar_view.html',
+    queryset=None
+):
+    data = {
+    }
+    return render(request, template, data)
 
+@login_required()
 def today_view(request, template='swingtime/daily_view.html', **params):
     '''
     See documentation for function``_datetime_view``.
@@ -223,6 +241,7 @@ def today_view(request, template='swingtime/daily_view.html', **params):
     return _datetime_view(request, template, datetime.now(), **params)
 
 
+@login_required()
 def year_view(request, year, template='swingtime/yearly_view.html', queryset=None):
     '''
 
@@ -267,6 +286,7 @@ def year_view(request, year, template='swingtime/yearly_view.html', queryset=Non
     })
 
 
+@login_required()
 def month_view(
     request,
     year,
@@ -322,3 +342,118 @@ def month_view(
 
     return render(request, template, data)
 
+from django_ical.views import ICalFeed
+
+
+class SwingtimeICalFeed(ICalFeed):
+
+    """
+    A simple event calender
+
+    http://django-ics.readthedocs.org/en/latest/usage.html
+    """
+    # Calendar user agents:
+    # * iOS/7.0.3 (11B511) dataaccessd/1.0
+    # * Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)
+
+    product_id = '-//refugeesupportgr.com//Everything//EN'
+    timezone = settings.TIME_ZONE
+    title = 'Thrive: All Events'
+
+    def __init__(self, request, slug):
+        super(SwingtimeICalFeed, self).__init__()
+        self.request = request
+        self.slug = slug
+        try:
+            self.calendar = ICal_Calendar.objects.get(slug=slug)
+        except ICal_Calendar.DoesNotExist:
+            raise http.Http404
+
+        if not self.calendar.volunteer.user.is_active:
+            raise ValueError("Inactive User")
+
+        if self.calendar.everything and not self.calendar.volunteer.user.is_superuser:
+            raise ValueError("Not Superuser")
+
+        if not self.calendar.everything:
+            self.title = 'Thrive: ' + self.calendar.volunteer.user.get_full_name()
+            self.product_id = '-//refugeesupportgr.com//User:{}//EN'.format(self.calendar.volunteer.user.id)
+
+    def items(self):
+        rv = Occurrence.objects.for_user(self.calendar.volunteer.user)
+        return rv.filter(end_time__gte=datetime.today()).order_by('-start_time')
+
+    def item_title(self, item):
+        if item.event.case:
+            return "{}: {}".format(item.event.case, item.event.title)
+        else:
+            return item.event.title
+
+    def item_description(self, item):
+        rv = item.event.description
+
+        if 'google' in self.request.META.get('HTTP_USER_AGENT', '').lower():
+            rv += '\n\n' + self.item_link(item)
+
+        return rv
+
+    def item_start_datetime(self, item):
+        return item.start_time
+
+    def item_end_datetime(self, item):
+        return item.end_time
+
+    def item_link(self, item):
+        return reverse('swingtime-event', args=(item.event.id,))
+
+    def item_guid(self, item):
+        return 'swingtime:occurance:{}@refugeesupportgr.com'.format(item.id)
+
+    def item_location(self, item):
+        return item.address
+
+
+def ics_feed(*p, **kw):
+    return SwingtimeICalFeed(*p, **kw)(*p, **kw)
+
+
+@login_required()
+def json_feed(request):
+    start = request.GET.get('start')
+    end = request.GET.get('end')
+    qs = Occurrence.objects.all()
+    if not request.user.is_superuser:
+        qs = qs.for_user(request.user)
+    else:
+        pass
+    if start:
+        qs = qs.filter(end_time__gte=datetime.fromtimestamp(int(start)))
+    if end:
+        qs = qs.filter(start_time__lte=datetime.fromtimestamp(int(end)))
+
+    response_data = [
+        {
+            'id': occ.id,
+            'title': (
+                "{}: {}".format(occ.event.case, occ.event.title)
+                if occ.event.case else
+                occ.event.title
+            ),
+            'start': time_mod.mktime(occ.start_time.timetuple()),
+            'end': time_mod.mktime(occ.end_time.timetuple()),
+            'url': reverse('swingtime-event', args=(occ.event.id,)),
+            'allDay': False,
+            'className': [
+                type(occ.event.case).__name__,
+                'color-{}'.format(occ.event.id % 8),
+            ],
+            'case': {
+                'id': occ.event.case.id,
+                'type': type(occ.event.case).__name__,
+                'title': str(occ.event.case),
+            } if occ.event.case else None,
+        }
+        for occ in qs
+    ]
+
+    return http.HttpResponse(json.dumps(response_data), content_type="application/json")

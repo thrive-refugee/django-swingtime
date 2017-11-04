@@ -1,5 +1,6 @@
 from datetime import datetime, date, timedelta
 from dateutil import rrule
+from functools import total_ordering
 
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
@@ -8,37 +9,26 @@ from django.urls import reverse
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
-from .conf import swingtime_settings
+from django.contrib.auth.models import User
+from django.dispatch import receiver
+from django.db.models.signals import post_save
+from django.core.urlresolvers import reverse
+from django.core.exceptions import ValidationError
+from django.db.models import Q
+
+from dateutil import rrule
+
+import refugee_manager.models as refugee_models
+import employment_manager.models as employment_models
+
 
 __all__ = (
-    'Note',
     'EventType',
     'Event',
     'Occurrence',
+    'ICal_Calendar',
     'create_event'
 )
-
-class Note(models.Model):
-    '''
-    A generic model for adding simple, arbitrary notes to other models such as
-    ``Event`` or ``Occurrence``.
-    '''
-    note = models.TextField(_('note'))
-    created = models.DateTimeField(_('created'), auto_now_add=True)
-    content_type = models.ForeignKey(
-        ContentType,
-        verbose_name=_('content type'),
-        on_delete=models.CASCADE
-    )
-    object_id = models.PositiveIntegerField(_('object id'))
-    content_object = GenericForeignKey('content_type', 'object_id')
-    
-    class Meta:
-        verbose_name = _('note')
-        verbose_name_plural = _('notes')
-
-    def __str__(self):
-        return self.note
 
 
 class EventType(models.Model):
@@ -56,6 +46,59 @@ class EventType(models.Model):
         return self.label
 
 
+class EventQuerySet(models.query.QuerySet):
+
+    def for_user(self, user):
+        if user.is_superuser:
+            rv = self.all()
+        else:
+            try:
+                rv = self.filter(
+                    Q(refugee_case__volunteers=user.volunteer) |
+                    Q(employment_case__volunteers=user.volunteer) |
+                    Q(refugee_case=None, employment_case=None)
+                )
+            except refugee_models.Volunteer.DoesNotExist:
+                rv = self.filter(refugee_case=None, employment_case=None)
+        return rv
+
+
+class EventManager(models.Manager):
+    use_for_related_fields = True
+
+    def get_queryset(self):
+        return EventQuerySet(self.model)
+
+    def for_user(self, user):
+        return self.get_queryset().for_user(user)
+
+
+class AutoCase(object):
+
+    def __get__(self, obj, type=None):  # pylint: disable=W0622
+        rv = None
+        try:
+            rv = obj.refugee_case
+        except AttributeError as exc:
+            logging.exception(exc)
+        if rv is None:
+            rv = obj.employment_case
+        return rv
+
+    def __set__(self, obj, value):
+        if value is None:
+            obj.refugee_case = None
+            obj.employment_case = None
+        elif isinstance(value, refugee_models.Case):
+            obj.refugee_case = value
+            obj.employment_case = None
+        elif isinstance(value, refugee_models.Case):
+            obj.refugee_case = None
+            obj.employment_case = value
+        else:
+            raise TypeError("Case cannot be a {} object".format(type(value).__name__))
+
+
 class Event(models.Model):
     '''
     Container model for general metadata and associated ``Occurrence`` entries.
@@ -67,16 +110,27 @@ class Event(models.Model):
         verbose_name=_('event type'),
         on_delete=models.CASCADE
     )
-    notes = GenericRelation(Note, verbose_name=_('notes'))
+    refugee_case = models.ForeignKey(refugee_models.Case, null=True, blank=True, db_index=True)
+    employment_case = models.ForeignKey(employment_models.EmploymentClient, null=True, blank=True, db_index=True)
+
+    case = AutoCase()
+
+    objects = EventManager()
 
     class Meta:
         verbose_name = _('event')
         verbose_name_plural = _('events')
         ordering = ('title', )
 
+    def clean(self):
+        if self.refugee_case and self.employment_case:
+            raise ValidationError(
+                "Cannot have both a Refugee and Employment case")
+
     def __str__(self):
         return self.title
 
+    @models.permalink
     def get_absolute_url(self):
         return reverse('swingtime-event', args=[str(self.id)])
 
@@ -99,13 +153,13 @@ class Event(models.Model):
         count = rrule_params.get('count')
         until = rrule_params.get('until')
         if not (count or until):
-            self.occurrence_set.create(start_time=start_time, end_time=end_time)
+            self.occurrence_set.create(start_time=start_time, end_time=end_time, address=address)
         else:
             rrule_params.setdefault('freq', rrule.DAILY)
             delta = end_time - start_time
             occurrences = []
             for ev in rrule.rrule(dtstart=start_time, **rrule_params):
-                occurrences.append(Occurrence(start_time=ev, end_time=ev + delta, event=self))
+                occurrences.append(Occurrence(start_time=ev, end_time=ev + delta, event=self, address=address))
             self.occurrence_set.bulk_create(occurrences)
 	    
     def upcoming_occurrences(self):
@@ -130,8 +184,8 @@ class Event(models.Model):
         return Occurrence.objects.daily_occurrences(dt=dt, event=self)
 
 
-class OccurrenceManager(models.Manager):
-    
+class OccurrenceQuerySet(models.query.QuerySet):
+
     def daily_occurrences(self, dt=None, event=None):
         '''
         Returns a queryset of for instances that have any overlap with a 
@@ -162,7 +216,36 @@ class OccurrenceManager(models.Manager):
         
         return qs.filter(event=event) if event else qs
 
+    def for_user(self, user):
+        if user.is_superuser:
+            rv = self
+        else:
+            try:
+                rv = self.filter(
+                    Q(event__refugee_case__volunteers=user.volunteer) |
+                    Q(event__employment_case__volunteers=user.volunteer) |
+                    Q(event__refugee_case=None, event__employment_case=None)
+                )
+            except refugee_models.Volunteer.DoesNotExist:
+                rv = self.filter(
+                    event__refugee_case=None, employment_case=None)
+        return rv
 
+
+class OccurrenceManager(models.Manager):
+    use_for_related_fields = True
+
+    def get_queryset(self):
+        return OccurrenceQuerySet(self.model)
+
+    def daily_occurrences(self, dt=None, event=None):
+        return self.get_queryset().daily_occurrences(dt, event)
+
+    def for_user(self, user):
+        return self.get_queryset().for_user(user)
+
+
+@total_ordering
 class Occurrence(models.Model):
     '''
     Represents the start end time for a specific occurrence of a master ``Event``
@@ -176,7 +259,7 @@ class Occurrence(models.Model):
         editable=False,
         on_delete=models.CASCADE
     )
-    notes = GenericRelation(Note, verbose_name=_('notes'))
+    address = models.CharField(max_length=255, blank=True, null=True)
 
     objects = OccurrenceManager()
 
@@ -189,6 +272,7 @@ class Occurrence(models.Model):
     def __str__(self):
         return u'{}: {}'.format(self.title, self.start_time.isoformat())
 
+    @models.permalink
     def get_absolute_url(self):
         return reverse('swingtime-occurrence', args=[str(self.event.id), str(self.id)])
 
@@ -249,9 +333,7 @@ def create_event(
         description=description,
         event_type=event_type
     )
-
-    if note is not None:
-        event.notes.create(note=note)
+    event.case = case
 
     start_time = start_time or datetime.now().replace(
         minute=0,

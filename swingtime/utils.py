@@ -96,6 +96,7 @@ class DefaultOccurrenceProxy(BaseOccurrenceProxy):
 
 
 def create_timeslot_table(
+    request,
     dt=None,
     items=None,
     start_time=swingtime_settings.TIMESLOT_START_TIME,
@@ -137,7 +138,7 @@ def create_timeslot_table(
     if isinstance(items, QuerySet):
         items = items._clone()
     elif not items:
-        items = Occurrence.objects.daily_occurrences(dt).select_related('event')
+        items = Occurrence.objects.for_user(request.user).daily_occurrences(dt).select_related('event')
 
     # build a mapping of timeslot "buckets"
     timeslots = {}

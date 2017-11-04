@@ -1,7 +1,9 @@
 '''
 Convenience forms for adding and updating ``Event`` and ``Occurrence``s.
+
 '''
 from datetime import datetime, date, time, timedelta
+
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 from django.forms.widgets import SelectDateWidget
@@ -257,8 +259,8 @@ class MultipleOccurrenceForm(forms.Form):
         label=_('Monthly options')
     )
 
-    month_ordinal = forms.IntegerField(widget=forms.Select(choices=ORDINAL), required=False)
-    month_ordinal_day = forms.IntegerField(widget=forms.Select(choices=WEEKDAY_LONG), required=False)
+    month_ordinal = forms.IntegerField(widget=forms.Select(choices=ORDINAL))
+    month_ordinal_day = forms.IntegerField(widget=forms.Select(choices=WEEKDAY_LONG))
     each_month_day = MultipleIntegerField(
         [(i,i) for i in range(1,32)],
         widget=forms.CheckboxSelectMultiple
@@ -272,8 +274,8 @@ class MultipleOccurrenceForm(forms.Form):
     )
 
     is_year_month_ordinal = forms.BooleanField(required=False)
-    year_month_ordinal = forms.IntegerField(widget=forms.Select(choices=ORDINAL), required=False)
-    year_month_ordinal_day = forms.IntegerField(widget=forms.Select(choices=WEEKDAY_LONG), required=False)
+    year_month_ordinal = forms.IntegerField(widget=forms.Select(choices=ORDINAL))
+    year_month_ordinal_day = forms.IntegerField(widget=forms.Select(choices=WEEKDAY_LONG))
 
     def __init__(self, *args, **kws):
         super(MultipleOccurrenceForm, self).__init__(*args, **kws)
@@ -322,6 +324,7 @@ class MultipleOccurrenceForm(forms.Form):
         event.add_occurrences(
             self.cleaned_data['start_time'],
             self.cleaned_data['end_time'],
+            self.cleaned_data['address'],
             **params
         )
 
@@ -376,8 +379,18 @@ class EventForm(forms.ModelForm):
 
     def __init__(self, *args, **kws):
         super(EventForm, self).__init__(*args, **kws)
-        self.fields['description'].required = False
+        # override some of the automatic model-driven fields
+        self.fields['title'].widget.attrs['size'] = 60
+        self.fields['title'].widget.attrs['required'] = True
 
+        self.fields['description'].required = False
+        self.fields['description'].widget = forms.Textarea(attrs={'cols': 80, 'rows': 4})
+        self.fields['description'].initial = 'Driver?\n\n'
+
+        queryset = refugee_models.Case.objects.for_user(request.user)
+        self.fields['refugee_case'] = forms.ModelChoiceField(queryset, required=False)
+        queryset = employment_models.EmploymentClient.objects.for_user(request.user)
+        self.fields['employment_case'] = forms.ModelChoiceField(queryset, required=False)
 
 class SingleOccurrenceForm(forms.ModelForm):
     '''
