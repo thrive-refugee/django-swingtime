@@ -1,3 +1,5 @@
+import random
+
 from datetime import datetime, date, timedelta
 from dateutil import rrule
 from functools import total_ordering
@@ -344,3 +346,45 @@ def create_event(
     end_time = end_time or (start_time + swingtime_settings.DEFAULT_OCCURRENCE_DURATION)
     event.add_occurrences(start_time, end_time, **rrule_params)
     return event
+
+def genslug():
+    return ''.join(ICal_Calendar._random.choice(string.uppercase) for _ in range(32))
+
+
+class ICal_Calendar(models.Model):
+    slug = models.CharField(max_length=32, primary_key=True, default=genslug)
+    volunteer = models.ForeignKey(refugee_models.Volunteer)
+    everything = models.BooleanField(default=False)
+
+    _random = random.SystemRandom()
+
+    @classmethod
+    def genurl(cls, request, everything=False, protocol=None):
+        """ICal_Calendar.genurl(Request) -> str
+        Find/create a calendar for the given user and return the URL to it.
+        """
+        user = request.user
+        if not user.is_superuser:
+            everything = False
+        v = user.volunteer
+        cal, _ = ICal_Calendar.objects.get_or_create(volunteer=v, everything=everything)
+
+        url = request.build_absolute_uri(reverse('swingtime.views.ics_feed', kwargs={'slug': cal.slug}))
+
+        if protocol is not None:
+            if url.startswith('http:'):
+                url = protocol + ':' + url[len('http:'):]
+        return url
+
+    @classmethod
+    def genwebcal(cls, request, everything=False):
+        return cls.genurl(request, everything, protocol='webcal')
+
+# Doesn't actually seem to be called?
+
+
+@receiver(post_save, sender=User)
+def remove_ical(sender, instance, created, raw, using, **kw):
+    print(sender, instance, created, raw, using, kw)
+    if not instance.is_active:
+        ICal_Calendar.objects.filter(volunteer=instance.volunteer).delete()

@@ -1,4 +1,4 @@
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 from swingtime import views
 
 urlpatterns = [
@@ -7,8 +7,6 @@ urlpatterns = [
         views.today_view, 
         name='swingtime-today'
     ),
-
-    '',
 
     url(
         r'^(?:calendar/)?$',
