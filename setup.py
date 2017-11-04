@@ -17,4 +17,5 @@ setup(
         'swingtime',
         'swingtime.conf'
     ],
+    requires=['dateutil', 'django'],
 )
